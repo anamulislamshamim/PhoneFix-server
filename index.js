@@ -49,6 +49,22 @@ async function run() {
             const result = await servicesColl.insertOne(newService);
             res.status(200).send(result);
         })
+        // update the service by _Id:
+        app.put("/service/update/:id", async(req, res) => {
+            const query = {_id:ObjectId(req.params.id)};
+            const {price, picture, name, description} = req.body;
+            const updateDoc = {
+                $set: {
+                  price: price,
+                  picture:picture,
+                  name: name,
+                  description: description
+                }
+              };
+              console.log(updateDoc);
+            const result = await servicesColl.updateOne(query, updateDoc);
+            res.status(200).send(result);
+        });
         // delete service by _Id
         app.delete("/service/delete/:id", async(req, res) => {
             const query = {_id:ObjectId(req.params.id)};
