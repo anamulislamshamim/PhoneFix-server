@@ -16,12 +16,12 @@ app.use(express.urlencoded({ extended: true }));
 function verifyJWT(req, res, next) {
     const auth_header = req.headers.auth_token;
     if(!auth_header){
-        return res.status(401).json({message:"unauthorized access!"});
+        return res.status(401).json({message:"unauthorized access! 1"});
     };
     const auth_token = auth_header.split(" ")[1];
     jwt.verify(auth_token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if(err){
-            return res.status(401).send({message:"unauthorized access"});
+            return res.status(401).send({message:"unauthorized access 2"});
         }
         req.decoded = decoded;
         next(); 
@@ -130,7 +130,7 @@ async function run() {
             res.status(200).send(reviews);
         });
         // update review:
-        app.patch("/review/update", async(req, res) => {
+        app.patch("/reviews/update", async(req, res) => {
             const { id, review } = req.body;
             const query = { _id: ObjectId(id) };
             const updateDoc = {
@@ -142,7 +142,7 @@ async function run() {
             res.status(200).send(result);
         });
         // get a single review by _id:
-        app.get("/reviews/:id", async (req, res) => {
+        app.get("/review/:id", async (req, res) => {
             const query = { _id: ObjectId(req.params.id) };
             const result = await userreviewColl.findOne(query);
             res.status(200).send(result);
