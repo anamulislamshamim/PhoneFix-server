@@ -1,4 +1,5 @@
 require("dotenv").config();
+const jwt=require("jsonwebtoken");
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require("cors");
@@ -11,6 +12,24 @@ app.use(cors());
 // set the middleware to read the form data and json data from request body:
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// json web token start
+function verifyJWT(req, res, next) {
+    const auth_header = req.headers.auth_token;
+    if(!auth_header){
+        return res.status(401).json({message:"unauthorized access!"});
+    };
+    const auth_token = auth_header.split(" ")[1];
+    jwt.verify(auth_token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err){
+            return res.status(401).send({message:"unauthorized access"});
+        }
+        req.decoded = decoded;
+        next(); 
+    });
+
+}
+
+// json web token end
 // mongodb start
 const uri = `mongodb+srv://shamim:${process.env.MONGO_PASSWORD}@cluster0.od9o8tu.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -26,7 +45,24 @@ async function run() {
     const servicesColl = db.collection("services");
     const userreviewColl = db.collection("reviews");
     try {
-        app.get("/services", async (req, res) => {
+        // jwt
+        app.post("/jwt", (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn:"1h"});
+            res.send({token});
+        });
+        // get all service for services page:
+        app.get("/services",async (req, res) => {
+            const query = {};
+            const services = await servicesColl.find(query).toArray();
+            res.status(200).send(services);
+        });
+        // get all for add-services data
+        app.get("/add-service/:email",verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            if( decoded.email !== req.params.email){
+                res.status(403).send("Forbidden!");
+            };
             const query = {};
             const services = await servicesColl.find(query).toArray();
             res.status(200).send(services);
@@ -79,7 +115,16 @@ async function run() {
             res.status(200).send(result);
         });
         // get all the reviews
-        app.get("/reviews", async (req, res) => {
+        app.get("/reviews/:email",verifyJWT, async (req, res) => {
+            const decoded = req.decoded;
+            if(decoded.email !== req.params.email){
+                res.status(403).send("Forbidden!");
+            };
+            const query = {};
+            const reviews = await userreviewColl.find(query).toArray();
+            res.status(200).send(reviews);
+        });
+        app.get("/reviews", async(req, res) => {
             const query = {};
             const reviews = await userreviewColl.find(query).toArray();
             res.status(200).send(reviews);
